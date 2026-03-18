@@ -1,0 +1,6 @@
+Timestamp,Student Name,Target Sentence,Spoken Text,Score
+2026-03-18 21:19:52,테스트,I'm from Korea.,I am from Korea I am from Korea,59
+2026-03-18 21:25:32,테스트2,I'm from Canada.,time from Canada,93
+2026-03-18 21:26:31,테스트2,I'm from Canada.,time from Canada,93
+2026-03-18 21:26:32,테스트2,I'm from USA.,time from Canada,66
+2026-03-18 21:26:53,테스트2,I'm from USA.,I'm from USA,100
