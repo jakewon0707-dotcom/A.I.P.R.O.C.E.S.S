@@ -5,28 +5,108 @@ import os
 import csv
 from datetime import datetime
 import pandas as pd
+import streamlit.components.v1 as components
 
 # Basic Setup
-st.set_page_config(page_title="Beat the Teacher! 🏆", layout="centered", initial_sidebar_state="expanded")
+st.set_page_config(
+    page_title="A.I. P.R.O.C.E.S.S. Tutor", 
+    page_icon="🌟", 
+    layout="wide", 
+    initial_sidebar_state="expanded"
+)
 
 # --- CSS / Aesthetics ---
 st.markdown("""
 <style>
-    .big-font {
-        font-size:36px !important;
-        font-weight: bold;
-        color: #1E3A8A;
-        text-align: center;
-        background-color: #F0F9FF;
-        border-radius: 15px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+    /* Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Nunito', sans-serif;
     }
-    .metric-container {
-        display: flex;
-        justify-content: center;
-        margin: 20px 0;
+    
+    .big-font {
+        font-size: 34px !important;
+        font-weight: 800;
+        color: #0284C7; /* Sky Blue */
+        text-align: center;
+        background-color: #E0F2FE;
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 20px;
+        border: 3px dashed #7DD3FC;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .perfect-score {
+        font-size: 38px;
+        font-weight: 900;
+        color: #10B981; /* Mint Green */
+        text-align: center;
+        margin-top: 15px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        animation: bounce 1s infinite alternate;
+    }
+    @keyframes bounce {
+        from { transform: translateY(0); }
+        to { transform: translateY(-10px); }
+    }
+    .main-title {
+        color: #0284C7;
+        font-weight: 900;
+        font-size: 50px;
+        margin-bottom: 5px;
+        text-align: center;
+    }
+    .sub-title {
+        color: #FF6F61; /* Coral Pink */
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 40px;
+        text-align: center;
+    }
+    .col-header {
+        color: #1E3A8A;
+        font-weight: 800;
+        font-size: 26px;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+    .highlight-good {
+        color: #10B981;
+        font-weight: 800;
+        background-color: #D1FAE5;
+        padding: 3px 8px;
+        border-radius: 8px;
+    }
+    .highlight-bad {
+        color: #EF4444;
+        font-weight: 800;
+        background-color: #FEE2E2;
+        padding: 3px 8px;
+        border-radius: 8px;
+        text-decoration: line-through;
+    }
+    .spoken-text-box {
+        background-color: #F3F4F6;
+        padding: 15px;
+        border-radius: 12px;
+        font-size: 20px;
+        margin-top: 10px;
+        border-left: 5px solid #0284C7;
+    }
+    div[data-testid="stSidebar"] {
+        background-color: #F8F9FA;
+        border-right: 2px solid #E2E8F0;
+    }
+    .sidebar-title {
+        font-size: 24px;
+        font-weight: 900;
+        color: #0284C7;
+        text-align: center;
+        margin-bottom: 15px;
+        background-color: #E0F2FE;
+        padding: 15px;
+        border-radius: 15px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -36,7 +116,7 @@ if 'teacher_target_sentence' not in st.session_state:
     st.session_state.teacher_target_sentence = ""
 
 # --- Constants ---
-LESSON_1_COUNTRIES = ["Korea", "UK", "USA", "Canada", "Australia"]
+LESSON_1_COUNTRIES = ["the USA", "the UK", "Korea", "Canada", "Australia", "Vietnam"]
 RESULTS_FILE = "results.csv"
 
 # --- Helper Functions ---
@@ -49,19 +129,35 @@ def calculate_similarity(target, spoken):
     target_clean = clean_text(target)
     spoken_clean = clean_text(spoken)
     
+    if not target_clean or not spoken_clean:
+        return 0
+        
     matcher = difflib.SequenceMatcher(None, target_clean, spoken_clean)
     score = int(matcher.ratio() * 100)
     return score
 
+def highlight_words(target, spoken):
+    target_words = clean_text(target).split()
+    spoken_words = clean_text(spoken).split()
+    
+    html_out = []
+    spoken_set = set(spoken_words)
+    
+    for word in target_words:
+        if word in spoken_set:
+            html_out.append(f"<span class='highlight-good'>{word}</span>")
+        else:
+            html_out.append(f"<span class='highlight-bad'>{word}</span>")
+            
+    return " ".join(html_out)
+
 def stt_from_audio(audio_data):
     recognizer = sr.Recognizer()
     try:
-        # Save audio byte data to a temporary file
         temp_wav = "temp_student_audio.wav"
         with open(temp_wav, "wb") as f:
             f.write(audio_data.getbuffer())
         
-        # Read the audio file
         with sr.AudioFile(temp_wav) as source:
             audio = recognizer.record(source)
             text = recognizer.recognize_google(audio, language="en-US")
@@ -69,9 +165,9 @@ def stt_from_audio(audio_data):
     except sr.UnknownValueError:
         return "⚠️ 음성을 인식할 수 없어요! 다시 크게 말해주세요."
     except sr.RequestError as e:
-        return f"⚠️ 구글 STT 서버에 연결할 수 없어요: {e}"
+        return f"⚠️ 구글 STT 서버 연결 오류: {e}"
     except Exception as e:
-        return f"⚠️ 오류 발생: {e}"
+        return f"⚠️ 시스템 오류: {e}"
 
 def save_result(student_name, target_sentence, spoken_text, score):
     file_exists = os.path.isfile(RESULTS_FILE)
@@ -81,115 +177,175 @@ def save_result(student_name, target_sentence, spoken_text, score):
             writer.writerow(["Timestamp", "Student Name", "Target Sentence", "Spoken Text", "Score"])
         writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), student_name, target_sentence, spoken_text, score])
 
-# --- UI Header ---
-st.title("🗣️ A.I. P.R.O.C.E.S.S.")
-st.subheader("Beat the Teacher! (5th Grade Edition) 🏆")
-
-# --- Tabs ---
-tab_teacher, tab_student, tab_data = st.tabs(["👨‍🏫 선생님 모드 (Teacher)", "👦👧 학생 모드 (Student)", "📊 연구 데이터 (Data)"])
-
-with tab_teacher:
-    st.header("✨ Teacher's Gold Standard")
-    st.write("학생들이 도전할 기준 문장을 설정하는 곳입니다.")
+# --- Sidebar Navigation ---
+with st.sidebar:
+    st.markdown('<div class="sidebar-title">👩‍🏫 VS 👧👦<br>Beat the Teacher!</div>', unsafe_allow_html=True)
+    menu = st.radio(
+        "메뉴를 선택하세요! 👇",
+        ["🏠 Home", "🎤 Beat the Teacher!", "📊 My Data", "👩‍🏫 Teacher's Room"]
+    )
     
-    col1, col2 = st.columns(2)
-    with col1:
-        st.write("📖 **[5학년 1단원] 국가 이름 선택**")
-        country_choice = st.selectbox("Where are you from?", LESSON_1_COUNTRIES)
-        preset_sentence = f"I'm from {country_choice}."
-        if st.button("목록에서 이 문장 선택"):
-            st.session_state.teacher_target_sentence = preset_sentence
-            st.success(f"기준 문장이 설정되었습니다: '{preset_sentence}'")
-            
-    with col2:
-        st.write("✏️ **직접 입력하기**")
-        custom_sentence = st.text_input("원하는 문장을 입력하세요:", placeholder="e.g. It's beautiful.")
-        if st.button("직접 입력한 문장 선택"):
-            if custom_sentence.strip():
-                st.session_state.teacher_target_sentence = custom_sentence.strip()
-                st.success(f"기준 문장이 설정되었습니다: '{custom_sentence}'")
-            else:
-                st.warning("문장을 먼저 입력해주세요!")
-                
     st.markdown("---")
-    if st.session_state.teacher_target_sentence:
-        st.info(f"📍 **현재 설정된 도전 문장:** {st.session_state.teacher_target_sentence}")
-    else:
-        st.warning("❗️ 아직 기준 문장이 설정되지 않았습니다.")
+    st.info("💡 **A.I. P.R.O.C.E.S.S. English Tutor**\n\n5학년 맞춤형 원어민 발음 정복 프로젝트! 선생님을 이겨라!")
 
-with tab_student:
-    st.header("🎮 Student Challenge")
+# --- Main App Logic ---
+if menu == "🏠 Home":
+    st.markdown('<div class="main-title">🌟 A.I. P.R.O.C.E.S.S. English Tutor</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-title">"선생님의 발음을 완벽하게 따라잡고 풍선을 터뜨려봐!"</div>', unsafe_allow_html=True)
     
-    if not st.session_state.teacher_target_sentence:
-        st.error("아직 도전할 문장이 없어요! 선생님께 문장을 설정해 달라고 요청하세요. 👨‍🏫")
-    else:
-        st.markdown('이 문장을 크고 또렷하게 읽어보세요! 👇')
-        st.markdown(f'<div class="big-font">"{st.session_state.teacher_target_sentence}"</div>', unsafe_allow_html=True)
+    col_img1, col_img2, col_img3 = st.columns([1,3,1])
+    with col_img2:
+        st.image("https://images.unsplash.com/photo-1577896851231-70ef185d8fe7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", use_container_width=True)
+    
+    st.markdown("""
+    <div style='background-color: #E0F2FE; padding: 20px; border-radius: 15px; border-left: 5px solid #0284C7; margin-top: 20px;'>
+        <h3 style='color: #0284C7; margin-top: 0;'>🚀 게임 규칙 (How to Play)</h3>
+        <ul style='font-size: 18px; line-height: 1.8;'>
+            <li>왼쪽 메뉴에서 <b>🎤 Beat the Teacher!</b> 를 선택하세요.</li>
+            <li>선생님의 발음을 <b>주의 깊게</b> 듣습니다.</li>
+            <li>마이크 버튼을 누르고 <b>자신 있게</b> 영어로 말해보세요!</li>
+            <li>AI가 발음을 분석해 <b>풍선 보상</b>을 줄 거예요. 🎉</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.success("Are you ready? 준비가 끝났다면 왼쪽 메뉴를 클릭해 출발! 🏃‍♂️💨")
+
+elif menu == "🎤 Beat the Teacher!":
+    st.markdown('<div class="main-title">🌟 A.I. P.R.O.C.E.S.S. Tutor</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-title">"선생님의 발음을 완벽하게 따라잡고 풍선을 터뜨려봐!"</div>', unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2, gap="large")
+    
+    with col1:
+        st.markdown('<div class="col-header">👨‍🏫 [1단계] 선생님의 미션</div>', unsafe_allow_html=True)
+        st.info("📝 미션 문장을 확인하고 원어민 발음을 들으세요.")
         
-        student_name = st.text_input("🙋‍♀️🙋‍♂️ 이름이나 번호를 입력하세요:", max_chars=20)
+        country_choice = st.selectbox("🌍 [1단원] 출신 국가를 선택하세요:", LESSON_1_COUNTRIES)
+        
+        # Decide mission sentence
+        if st.session_state.teacher_target_sentence:
+            mission_sentence = st.session_state.teacher_target_sentence
+            st.warning("👩‍🏫 선생님의 스페셜 미션입니다!")
+        else:
+            mission_sentence = f"I'm from {country_choice}."
+            
+        st.markdown(f'<div class="big-font">"{mission_sentence}"</div>', unsafe_allow_html=True)
+        
+        # HTML/JS Text-to-Speech Button
+        tts_html = f"""
+        <div style="display: flex; justify-content: center; margin-top: 10px;">
+            <button onclick="let msg = new SpeechSynthesisUtterance('{mission_sentence.replace("'", "\\'")}'); msg.lang='en-US'; window.speechSynthesis.speak(msg);" 
+            style="background-color: #0284C7; color: white; border: none; border-radius: 30px; padding: 15px 40px; font-size: 20px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 15px rgba(2, 132, 199, 0.4); transition: transform 0.2s;">
+            🎧 Listen to Teacher
+            </button>
+        </div>
+        """
+        st.components.v1.html(tts_html, height=100)
+        
+    with col2:
+        st.markdown('<div class="col-header">🎙️ [2단계] 나의 도전!</div>', unsafe_allow_html=True)
+        st.warning("🔥 Are you ready to beat the teacher? 마이크를 켜세요!")
+        
+        student_name = st.text_input("🙋‍♀️🙋‍♂️ 내 이름 (필수 입력):", placeholder="예: 5학년 1반 홍길동")
         
         if student_name:
-            st.write("🎙️ **마이크 버튼을 누르고 녹음을 시작하세요!**")
-            audio_value = st.audio_input("Record your voice! (목소리 녹음)")
+            # st.audio_input button will be coral pink thanks to config.toml
+            audio_value = st.audio_input("🎙️ 내 발음 녹음하기 (도전!)")
             
             if audio_value:
-                with st.spinner("AI가 발음을 듣고 있어요... 🤖"):
+                with st.spinner("AI가 발음을 분석하고 있어요... 🤖"):
                     spoken_text = stt_from_audio(audio_value)
-                    
-                st.markdown(f"**🗣️ 내가 한 말:** {spoken_text}")
                 
                 if "⚠️" not in spoken_text:
-                    score = calculate_similarity(st.session_state.teacher_target_sentence, spoken_text)
+                    score = calculate_similarity(mission_sentence, spoken_text)
                     
                     st.markdown("---")
-                    col_score, _ = st.columns([1, 1])
-                    with col_score:
-                        st.metric(label="내 점수 (Score)", value=f"{score} / 100")
+                    st.markdown(f"<div class='spoken-text-box'>🗣️ <b>내가 한 말:</b> {spoken_text}</div>", unsafe_allow_html=True)
                     
-                    # 피드백 로직
+                    # Highlight Evidence (CER Model - Evidence)
+                    st.markdown("### 🔎 AI 분석 결과 (Evidence)")
+                    highlighted_html = highlight_words(mission_sentence, spoken_text)
+                    st.markdown(f"<div style='font-size: 22px; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #ddd;'>{highlighted_html}</div>", unsafe_allow_html=True)
+                    st.caption("초록색은 정확한 단어, 빨간색 밑줄은 잘못 발음한 단어입니다.")
+                    
+                    # Similarity Score (CER Model - Reasoning / Real-time)
+                    st.markdown("### 📊 선생님과의 유사도 (Similarity)")
+                    st.progress(score / 100)
+                    
+                    # Feedback & Reward
                     if score >= 90:
+                        st.markdown('<div class="perfect-score">Perfect! You beat the teacher! 🎉</div>', unsafe_allow_html=True)
                         st.balloons()
-                        st.success("🎉 우와! 원어민 같아요! 🏆 You beat the teacher!")
-                        st.write("🎧 내 목소리를 다시 들어보세요:")
-                        st.audio(audio_value, format="audio/wav")
-                    elif score >= 70:
-                        st.info("👍 Good job! 거~의 비슷하게 따라했어요! You're getting there!")
+                    elif score >= 80:
+                        st.success(f"**유사도 {score}%** - Excellent! 선생님이랑 거의 똑같아졌어! 👏")
                     else:
-                        st.warning("💪 Keep trying! You can do it! 포기하지 말고 다시 한 번 해볼까요?")
+                        st.error(f"**유사도 {score}%** - Good try! 한 번만 더 선생님 목소리를 듣고 도전해 볼까? 😉")
                         
-                    # Easy CER Model (추가 보너스!)
-                    original_words = len(clean_text(st.session_state.teacher_target_sentence).split())
-                    spoken_words = len(clean_text(spoken_text).split())
-                    
-                    # 정답을 포함하고 있고, 덧붙여서 말했다면 보너스!
-                    if spoken_words > original_words and score >= 60:
-                        # 정답 문장이 내 말 안에 포함되어 있는지 확인
-                        if clean_text(st.session_state.teacher_target_sentence) in clean_text(spoken_text):
-                            st.success("🌟 Oho! 이유(Reason)나 추가 내용을 잘 말했군요! +10점 보너스! (Easy CER Model)")
-                            score += 10
-                            
-                    # 자동 저장
-                    save_result(student_name, st.session_state.teacher_target_sentence, spoken_text, min(score, 100))
-                    st.toast("저장되었습니다! 💾")
-                    
+                    save_result(student_name, mission_sentence, spoken_text, score)
+                else:
+                    st.error(spoken_text)
         else:
-            st.info("시작하려면 이름을 먼저 입력해야 해요! ✨")
+            st.info("이름을 입력하면 🎙️ 녹음 버튼이 나타납니다! ✨")
 
-with tab_data:
-    st.header("📊 연구용 누적 데이터 (Admin Only)")
-    st.write("학생들의 스피킹 기록을 확인할 수 있습니다.")
+elif menu == "📊 My Data":
+    st.markdown('<div class="main-title">📊 My Data (학생 기록)</div>', unsafe_allow_html=True)
+    st.write("### 누가누가 선생님을 이겼을까? 점수판을 확인해봐! 🏆")
     
     if os.path.exists(RESULTS_FILE):
         df = pd.read_csv(RESULTS_FILE)
-        st.dataframe(df, use_container_width=True)
+        # Sort by score descending
+        df_sorted = df.sort_values(by="Score", ascending=False).reset_index(drop=True)
         
-        # CSV 다운로드 버튼
+        st.dataframe(
+            df_sorted.style.highlight_max(subset=['Score'], color='#D1FAE5'), 
+            use_container_width=True,
+            height=400
+        )
+        
+        st.success(f"📚 지금 등록된 플레이는 총 {len(df)}건입니다!")
+    else:
+        st.info("아직 도전 기록이 없습니다. 첫 번째 도전자가 되어보세요! 🏃‍♂️")
+
+elif menu == "👩‍🏫 Teacher's Room":
+    st.markdown('<div class="main-title">👩‍🏫 Teacher\\'s Room</div>', unsafe_allow_html=True)
+    st.write("선생님 전용 관리 공간입니다. 직접 기준 문장을 설정하거나 전체 데이터를 관리하세요.")
+    
+    st.markdown("---")
+    st.subheader("1. 🎯 특별 미션 문장 설정")
+    custom_sentence = st.text_input("원하는 특별 문장을 입력하세요:", placeholder="e.g. It's a nice day.")
+    col_btn1, col_btn2 = st.columns(2)
+    with col_btn1:
+        if st.button("✨ 특별 미션 문장 적용하기", use_container_width=True):
+            if custom_sentence.strip():
+                st.session_state.teacher_target_sentence = custom_sentence.strip()
+                st.success(f"적용 완료! 현재 미션: '{custom_sentence}'")
+            else:
+                st.warning("문장을 먼저 입력해주세요!")
+    with col_btn2:
+        if st.button("🔄 미션 초기화 (기본 국가 미션)", use_container_width=True):
+            st.session_state.teacher_target_sentence = ""
+            st.info("기본 미션 모드로 돌아갔습니다.")
+            
+    if st.session_state.teacher_target_sentence:
+        st.info(f"**현재 설정된 특별 미션:** {st.session_state.teacher_target_sentence}")
+        
+    st.markdown("---")
+    st.subheader("2. 📥 데이터베이스 관리 (results.csv)")
+    if os.path.exists(RESULTS_FILE):
         with open(RESULTS_FILE, "rb") as file:
             st.download_button(
-                label="📥 CSV 데이터 다운로드",
+                label="📥 전체 성적 CSV 파일 다운로드",
                 data=file,
                 file_name="student_speaking_results.csv",
                 mime="text/csv",
+                use_container_width=True
             )
+        
+        if st.button("⚠️ 모든 데이터 초기화 (신중히 클릭!)"):
+            os.remove(RESULTS_FILE)
+            st.warning("데이터가 모두 삭제되었습니다. 페이지를 새로고침하세요.")
+            st.rerun()
     else:
-        st.write("아직 기록된 데이터가 없습니다.")
+        st.write("기록된 데이터가 없습니다.")
+
