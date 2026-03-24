@@ -3,13 +3,13 @@ import React from "react";
 import { Headphones } from "lucide-react";
 
 interface Props {
-  countryOptions: string[];
-  selectedCountry: string;
-  onSelectCountry: (c: string) => void;
+  gradeOptions: string[];
+  selectedGrade: string;
+  onSelectGrade: (g: string) => void;
   targetSentence: string;
 }
 
-export default function MissionCard({ countryOptions, selectedCountry, onSelectCountry, targetSentence }: Props) {
+export default function MissionCard({ gradeOptions, selectedGrade, onSelectGrade, targetSentence }: Props) {
   const handleListen = () => {
     const utterance = new SpeechSynthesisUtterance(targetSentence);
     utterance.lang = "en-US";
@@ -24,13 +24,13 @@ export default function MissionCard({ countryOptions, selectedCountry, onSelectC
       </div>
       
       <div className="w-full max-w-sm mb-6">
-        <label className="text-slate-400 text-sm font-bold mb-2 block text-center">🌏 출신 국가를 선택하세요</label>
+        <label className="text-slate-400 text-sm font-bold mb-2 block text-center">🎒 학년을 선택하세요</label>
         <select 
           className="w-full p-4 rounded-2xl bg-slate-50 border-2 border-sky-100 text-slate-700 text-xl font-bold outline-none focus:border-sky-300 text-center transition-colors appearance-none cursor-pointer"
-          value={selectedCountry}
-          onChange={(e) => onSelectCountry(e.target.value)}
+          value={selectedGrade}
+          onChange={(e) => onSelectGrade(e.target.value)}
         >
-          {countryOptions.map(c => <option key={c} value={c}>{c}</option>)}
+          {gradeOptions.map(g => <option key={g} value={g}>{g}</option>)}
         </select>
       </div>
 

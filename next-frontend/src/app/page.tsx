@@ -4,12 +4,14 @@ import MissionCard from "@/components/MissionCard";
 import JellyButton from "@/components/JellyButton";
 import ResultBoard from "@/components/ResultBoard";
 import { compareTwoStrings } from "string-similarity"; 
+import { supabase } from "@/lib/supabase";
 
-const LESSON_1_COUNTRIES = ["the USA", "the UK", "Korea", "Canada", "Australia", "Vietnam"];
+const LESSON_GRADES = ["1st", "2nd", "3rd", "4th", "5th", "6th"];
 
 export default function App() {
-  const [selectedCountry, setSelectedCountry] = useState(LESSON_1_COUNTRIES[2]);
-  const [targetSentence, setTargetSentence] = useState(`I'm from ${LESSON_1_COUNTRIES[2]}.`);
+  const [selectedGrade, setSelectedGrade] = useState(LESSON_GRADES[5]);
+  const [targetSentence, setTargetSentence] = useState(`I'm in ${LESSON_GRADES[5]} grade.`);
+  const [studentId, setStudentId] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [spokenText, setSpokenText] = useState("");
   const [score, setScore] = useState<number | null>(null);
@@ -18,10 +20,10 @@ export default function App() {
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
-    setTargetSentence(`I'm from ${selectedCountry}.`);
+    setTargetSentence(`I'm in ${selectedGrade} grade.`);
     setScore(null);
     setSpokenText("");
-  }, [selectedCountry]);
+  }, [selectedGrade]);
 
   useEffect(() => {
     // Initialize SpeechRecognition on the Client
@@ -32,7 +34,7 @@ export default function App() {
       recognition.interimResults = false;
       recognition.lang = "en-US";
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = async (event: any) => {
         const transcript = event.results[0][0].transcript;
         setSpokenText(transcript);
         
@@ -42,6 +44,18 @@ export default function App() {
         const simScore = Math.round(compareTwoStrings(cleanTarget, cleanSpoken) * 100);
         setScore(simScore);
         setIsRecording(false);
+
+        if (studentId) {
+          try {
+            await supabase.from("student_scores").insert([{
+              student_id: studentId,
+              sentence: targetSentence,
+              score: simScore
+            }]);
+          } catch (err) {
+            console.error("Failed to save score:", err);
+          }
+        }
       };
 
       recognition.onerror = (event: any) => {
@@ -63,6 +77,11 @@ export default function App() {
   }, [targetSentence]);
 
   const handleToggleRecord = () => {
+    if (!studentId.trim()) {
+      alert("먼저 이름이나 번호를 입력해주세요! (예: 6학년 1반 1번 -> 60101)");
+      return;
+    }
+
     if (!recognitionRef.current) {
       alert("크롬(Chrome)이나 엣지(Edge) 브라우저에서 마이크 기능을 지원합니다!");
       return;
@@ -96,15 +115,27 @@ export default function App() {
         <p className="text-2xl md:text-3xl text-rose-400 font-bold max-w-2xl mx-auto leading-relaxed">
           "선생님의 발음을 완벽하게 따라잡고<br className="hidden md:block" /> 펑퍼짐한 풍선을 터뜨려봐!"
         </p>
+
+        {/* Student ID Input */}
+        <div className="mt-8 bg-white p-6 rounded-3xl cool-shadow border-2 border-slate-50 max-w-sm mx-auto">
+          <label className="text-slate-500 text-sm font-bold mb-3 block">🧑‍🎓 이름 또는 학번을 입력하세요</label>
+          <input 
+            type="text" 
+            value={studentId}
+            onChange={(e) => setStudentId(e.target.value)}
+            placeholder="예: 홍길동 또는 60101"
+            className="w-full p-4 rounded-2xl bg-slate-50 border-2 border-sky-100 text-slate-700 text-xl font-bold outline-none focus:border-sky-300 text-center transition-colors"
+          />
+        </div>
       </header>
 
       {/* Main Content Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 w-full">
         {/* Left Column: Teacher Mission */}
         <MissionCard 
-          countryOptions={LESSON_1_COUNTRIES}
-          selectedCountry={selectedCountry}
-          onSelectCountry={setSelectedCountry}
+          gradeOptions={LESSON_GRADES}
+          selectedGrade={selectedGrade}
+          onSelectGrade={setSelectedGrade}
           targetSentence={targetSentence}
         />
         
