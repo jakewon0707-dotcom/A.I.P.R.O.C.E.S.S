@@ -308,7 +308,7 @@ elif menu == "📊 My Data":
         st.info("아직 도전 기록이 없습니다. 첫 번째 도전자가 되어보세요! 🏃‍♂️")
 
 elif menu == "👩‍🏫 Teacher's Room":
-    st.markdown('<div class="main-title">👩‍🏫 Teacher\\'s Room</div>', unsafe_allow_html=True)
+    st.markdown("""<div class="main-title">👩‍🏫 Teacher's Room</div>""", unsafe_allow_html=True)
     st.write("선생님 전용 관리 공간입니다. 직접 기준 문장을 설정하거나 전체 데이터를 관리하세요.")
     
     st.markdown("---")
