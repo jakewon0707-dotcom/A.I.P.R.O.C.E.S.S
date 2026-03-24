@@ -18,95 +18,162 @@ st.set_page_config(
 # --- CSS / Aesthetics ---
 st.markdown("""
 <style>
-    /* Google Fonts */
-    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+    /* Google Fonts - Jua for cute thick style, Nunito as fallback */
+    @import url('https://fonts.googleapis.com/css2?family=Jua&family=Nunito:wght@400;700;900&display=swap');
     
-    html, body, [class*="css"] {
-        font-family: 'Nunito', sans-serif;
+    html, body, [class*="css"], p, div, span, label {
+        font-family: 'Jua', 'Nunito', sans-serif !important;
+        font-size: 18px;
     }
     
+    /* 1. Pastel Background for the whole app */
+    .stApp {
+        background: linear-gradient(135deg, #FFF0F5 0%, #E0F7FA 100%);
+    }
+
+    /* 2. Game-style Buttons */
+    .stButton > button {
+        background-color: #FF6F61 !important;
+        color: white !important;
+        font-family: 'Jua', sans-serif !important;
+        font-size: 22px !important;
+        border: none !important;
+        border-radius: 30px !important;
+        padding: 10px 24px !important;
+        box-shadow: 0 6px 0 #D85A4E, 0 10px 15px rgba(0,0,0,0.1) !important;
+        transition: all 0.1s ease !important;
+        height: auto !important;
+        margin-top: 10px;
+    }
+    .stButton > button:active {
+        box-shadow: 0 2px 0 #D85A4E, 0 4px 6px rgba(0,0,0,0.1) !important;
+        transform: translateY(4px) !important;
+    }
+
+    /* 3. Input fields rounded */
+    .stTextInput > div > div > input {
+        border-radius: 20px !important;
+        border: 3px solid #7DD3FC !important;
+        padding: 10px 15px !important;
+        font-size: 18px !important;
+        font-family: 'Jua', sans-serif !important;
+    }
+    
+    .stSelectbox > div > div {
+        border-radius: 20px !important;
+        border: 3px solid #7DD3FC !important;
+        font-family: 'Jua', sans-serif !important;
+    }
+
     .big-font {
-        font-size: 34px !important;
+        font-family: 'Jua', sans-serif !important;
+        font-size: 38px !important;
         font-weight: 800;
         color: #0284C7; /* Sky Blue */
         text-align: center;
-        background-color: #E0F2FE;
-        border-radius: 20px;
+        background-color: #FFFFFF;
+        border-radius: 25px;
         padding: 30px;
         margin-bottom: 20px;
-        border: 3px dashed #7DD3FC;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border: 4px dashed #7DD3FC;
+        box-shadow: 0 8px 15px rgba(0,0,0,0.05);
     }
+    
     .perfect-score {
-        font-size: 38px;
+        font-family: 'Jua', sans-serif !important;
+        font-size: 42px;
         font-weight: 900;
         color: #10B981; /* Mint Green */
         text-align: center;
         margin-top: 15px;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        text-shadow: 2px 2px 0px #A7F3D0;
         animation: bounce 1s infinite alternate;
     }
+    
     @keyframes bounce {
         from { transform: translateY(0); }
-        to { transform: translateY(-10px); }
+        to { transform: translateY(-15px); }
     }
+    
     .main-title {
+        font-family: 'Jua', sans-serif !important;
         color: #0284C7;
         font-weight: 900;
-        font-size: 50px;
+        font-size: 55px;
         margin-bottom: 5px;
         text-align: center;
+        text-shadow: 2px 2px 0px #BAE6FD;
     }
+    
     .sub-title {
+        font-family: 'Jua', sans-serif !important;
         color: #FF6F61; /* Coral Pink */
-        font-size: 24px;
+        font-size: 26px;
         font-weight: bold;
         margin-bottom: 40px;
         text-align: center;
     }
+    
     .col-header {
+        font-family: 'Jua', sans-serif !important;
         color: #1E3A8A;
         font-weight: 800;
-        font-size: 26px;
+        font-size: 28px;
         margin-bottom: 15px;
         text-align: center;
+        background-color: #E0F2FE;
+        padding: 10px;
+        border-radius: 20px;
+        border: 3px solid #BAE6FD;
     }
+    
     .highlight-good {
         color: #10B981;
         font-weight: 800;
         background-color: #D1FAE5;
-        padding: 3px 8px;
-        border-radius: 8px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        border: 2px solid #34D399;
     }
+    
     .highlight-bad {
         color: #EF4444;
         font-weight: 800;
         background-color: #FEE2E2;
-        padding: 3px 8px;
-        border-radius: 8px;
-        text-decoration: line-through;
-    }
-    .spoken-text-box {
-        background-color: #F3F4F6;
-        padding: 15px;
+        padding: 4px 10px;
         border-radius: 12px;
-        font-size: 20px;
-        margin-top: 10px;
-        border-left: 5px solid #0284C7;
+        text-decoration: line-through;
+        border: 2px solid #F87171;
     }
+    
+    .spoken-text-box {
+        background-color: #FFFFFF;
+        padding: 20px;
+        border-radius: 20px;
+        font-size: 22px;
+        margin-top: 15px;
+        border: 3px solid #0284C7;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        font-family: 'Jua', sans-serif !important;
+    }
+    
     div[data-testid="stSidebar"] {
-        background-color: #F8F9FA;
-        border-right: 2px solid #E2E8F0;
+        background: linear-gradient(180deg, #FFFFFF 0%, #F0F9FF 100%);
+        border-right: 3px solid #E2E8F0;
     }
+    
     .sidebar-title {
-        font-size: 24px;
+        font-family: 'Jua', sans-serif !important;
+        font-size: 26px;
         font-weight: 900;
         color: #0284C7;
         text-align: center;
         margin-bottom: 15px;
         background-color: #E0F2FE;
         padding: 15px;
-        border-radius: 15px;
+        border-radius: 20px;
+        border: 3px solid #7DD3FC;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
 </style>
 """, unsafe_allow_html=True)
