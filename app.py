@@ -193,9 +193,7 @@ if menu == "🏠 Home":
     st.markdown('<div class="main-title">🌟 A.I. P.R.O.C.E.S.S. English Tutor</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-title">"선생님의 발음을 완벽하게 따라잡고 풍선을 터뜨려봐!"</div>', unsafe_allow_html=True)
     
-    col_img1, col_img2, col_img3 = st.columns([1,3,1])
-    with col_img2:
-        st.image("https://images.unsplash.com/photo-1577896851231-70ef185d8fe7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80", use_container_width=True)
+    st.markdown('<div style="text-align: center; font-size: 80px; margin: 10px 0; letter-spacing: 20px;">🎮🎙️🏆</div>', unsafe_allow_html=True)
     
     st.markdown("""
     <div style='background-color: #E0F2FE; padding: 20px; border-radius: 15px; border-left: 5px solid #0284C7; margin-top: 20px;'>
